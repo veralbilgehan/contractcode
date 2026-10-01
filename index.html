@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContractCode – Hukuki AI Analiz Botu</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <i class="fas fa-gavel fa-2x"></i>
+            <div>
+                <h3>ContractCode</h3>
+                <p>Hukuki Sentez ve Risk Analizi</p>
+            </div>
+        </div>
+        <!-- Input Form -->
+        <div class="form-section">
+            <textarea id="eventSummary" placeholder="Olay Özeti (Fact Pattern)..." rows="3"></textarea>
+            <textarea id="documentText" placeholder="İncelenecek sözleşme / metin..." rows="4"></textarea>
+            <textarea id="goal" placeholder="Analiz Amacı (örn: risk tespiti, revizyon önerisi)..." rows="2"></textarea>
+            <button id="analyzeBtn" class="primary-btn">Analizi Başlat 🚀</button>
+        </div>
+        <!-- Chat / Report Area -->
+        <div class="chat-messages" id="chatMessages">
+            <!-- Sistem mesajı -->
+            <div class="message bot-message">
+                <div class="message-content">
+                    <strong>🔍 ContractCode Hazır</strong><br>
+                    Lütfen yukarıdaki alanları doldurup <b>"Analizi Başlat"</b> butonuna basın.
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>
