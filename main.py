@@ -70,48 +70,54 @@ def search_web(query: str) -> str:
     """General web search for Turkish legal information."""
     return _ddg_search(f"{query} Türk hukuku")
 
-# --- Agents (strict anti-hallucination instructions) ---
-legislation_expert = Agent(
-    role="Mevzuat Araştırmacısı",
-    goal="İlgili kanun maddelerini gerçek kaynaklardan bulmak",
-    backstory=(
-        "Türk mevzuatı konusunda uzman bir araştırmacısın. "
-        "SADECE search_legislation aracını kullanarak bulduğun gerçek kanun maddelerini raporla. "
-        "KESİNLİKLE uydurma veya tahmine dayalı madde numarası VERME. "
-        "Bulamadığın bilgiyi 'bulunamadı' olarak belirt."
-    ),
-    tools=[search_legislation],
-    llm=llm,
-    verbose=ENV == "development",
-)
+# --- Agent Factories (new instance per request to avoid concurrency issues) ---
+def make_legislation_agent():
+    return Agent(
+        role="Mevzuat Araştırmacısı",
+        goal="İlgili kanun maddelerini gerçek kaynaklardan bulmak",
+        backstory=(
+            "Türk mevzuatı konusunda uzman bir araştırmacısın. "
+            "SADECE search_legislation aracını kullanarak bulduğun gerçek kanun maddelerini raporla. "
+            "KESİNLİKLE uydurma veya tahmine dayalı madde numarası VERME. "
+            "Bulamadığın bilgiyi 'bulunamadı' olarak belirt."
+        ),
+        tools=[search_legislation],
+        llm=llm,
+        verbose=ENV == "development",
+        max_retry_limit=3,
+    )
 
-case_law_expert = Agent(
-    role="İçtihat Uzmanı",
-    goal="Emsal Yargıtay kararlarını gerçek kaynaklardan bulmak",
-    backstory=(
-        "Yargıtay içtihatları konusunda uzman bir araştırmacısın. "
-        "SADECE search_case_law aracını kullanarak bulduğun gerçek kararları raporla. "
-        "KESİNLİKLE uydurma karar numarası, esas numarası veya tarih VERME. "
-        "Her karar için kaynak URL'sini mutlaka belirt. "
-        "Bulamadığın bilgiyi 'bulunamadı' olarak belirt."
-    ),
-    tools=[search_case_law],
-    llm=llm,
-    verbose=ENV == "development",
-)
+def make_case_law_agent():
+    return Agent(
+        role="İçtihat Uzmanı",
+        goal="Emsal Yargıtay kararlarını gerçek kaynaklardan bulmak",
+        backstory=(
+            "Yargıtay içtihatları konusunda uzman bir araştırmacısın. "
+            "SADECE search_case_law aracını kullanarak bulduğun gerçek kararları raporla. "
+            "KESİNLİKLE uydurma karar numarası, esas numarası veya tarih VERME. "
+            "Her karar için kaynak URL'sini mutlaka belirt. "
+            "Bulamadığın bilgiyi 'bulunamadı' olarak belirt."
+        ),
+        tools=[search_case_law],
+        llm=llm,
+        verbose=ENV == "development",
+        max_retry_limit=3,
+    )
 
-synthesis_expert = Agent(
-    role="Kıdemli Hukuk Analisti",
-    goal="Mevzuat ve içtihatları sentezleyerek nihai raporu hazırlamak",
-    backstory=(
-        "Sadece verilen verilere dayanarak rapor üretirsin. "
-        "KESİNLİKLE kendi bilginden ek karar numarası veya madde numarası EKLEME. "
-        "Araştırma sonuçlarında bulunamayan bilgiyi 'doğrulanamamıştır' olarak belirt. "
-        "Her alıntının kaynağını göster."
-    ),
-    llm=llm,
-    verbose=ENV == "development",
-)
+def make_synthesis_agent():
+    return Agent(
+        role="Kıdemli Hukuk Analisti",
+        goal="Mevzuat ve içtihatları sentezleyerek nihai raporu hazırlamak",
+        backstory=(
+            "Sadece verilen verilere dayanarak rapor üretirsin. "
+            "KESİNLİKLE kendi bilginden ek karar numarası veya madde numarası EKLEME. "
+            "Araştırma sonuçlarında bulunamayan bilgiyi 'doğrulanamamıştır' olarak belirt. "
+            "Her alıntının kaynağını göster."
+        ),
+        llm=llm,
+        verbose=ENV == "development",
+        max_retry_limit=3,
+    )
 
 # --- Request models ---
 class AnalysisRequest(BaseModel):
@@ -145,21 +151,19 @@ app.mount("/static", StaticFiles(directory=os.path.dirname(__file__)), name="sta
 async def analyze_legal_case(request: AnalysisRequest):
     logger.info("Sözleşme analizi isteği: amaç=%s", request.goal)
     try:
+        leg = make_legislation_agent()
+        case = make_case_law_agent()
+        synth = make_synthesis_agent()
+
         task_leg = Task(
-            description=(
-                f"Sözleşme Metni: {request.documentText}\n"
-                "İlgili kanun maddelerini bulun."
-            ),
+            description=f"Sözleşme Metni: {request.documentText}\nİlgili kanun maddelerini bulun.",
             expected_output="Kanun maddeleri ve tam metinleri listesi.",
-            agent=legislation_expert,
+            agent=leg,
         )
         task_case = Task(
-            description=(
-                f"Sözleşme Metni: {request.documentText}\n"
-                "Benzer Yargıtay içtihatlarını bulun, karar numarası ve özetini getir."
-            ),
+            description=f"Sözleşme Metni: {request.documentText}\nBenzer Yargıtay içtihatlarını bulun, karar numarası ve özetini getir.",
             expected_output="Karar numarası, tarih ve temel prensipler.",
-            agent=case_law_expert,
+            agent=case,
         )
         task_report = Task(
             description=(
@@ -167,16 +171,11 @@ async def analyze_legal_case(request: AnalysisRequest):
                 "Raporu HTML formatında, bölümler: [TESPIT], [MEVZUAT], [İÇTİHAT], [EYLEM ÖNERİSİ] şeklinde oluştur."
             ),
             expected_output="HTML yapılandırılmış hukuk analizi raporu.",
-            agent=synthesis_expert,
+            agent=synth,
             context=[task_leg, task_case],
         )
 
-        crew = Crew(
-            agents=[legislation_expert, case_law_expert, synthesis_expert],
-            tasks=[task_leg, task_case, task_report],
-            process=Process.sequential,
-        )
-
+        crew = Crew(agents=[leg, case, synth], tasks=[task_leg, task_case, task_report], process=Process.sequential)
         result = await crew.kickoff_async()
         logger.info("Sözleşme analizi tamamlandı.")
         return {"analysis": str(result)}
@@ -189,21 +188,19 @@ async def analyze_legal_case(request: AnalysisRequest):
 async def search_legal(request: SearchRequest):
     logger.info("Mevzuat arama isteği: %s", request.query)
     try:
+        leg = make_legislation_agent()
+        case = make_case_law_agent()
+        synth = make_synthesis_agent()
+
         task_leg = Task(
-            description=(
-                f"Konu: {request.query}\n"
-                "Bu konuyla ilgili tüm kanun maddelerini bul. Madde numarası, kanun adı ve tam metnini getir."
-            ),
+            description=f"Konu: {request.query}\nBu konuyla ilgili tüm kanun maddelerini bul. Madde numarası, kanun adı ve tam metnini getir.",
             expected_output="İlgili kanun maddeleri listesi: kanun adı, madde numarası, tam metin.",
-            agent=legislation_expert,
+            agent=leg,
         )
         task_case = Task(
-            description=(
-                f"Konu: {request.query}\n"
-                "Bu konuyla ilgili emsal Yargıtay kararlarını bul. Karar numarası, tarih ve özet getir."
-            ),
+            description=f"Konu: {request.query}\nBu konuyla ilgili emsal Yargıtay kararlarını bul. Karar numarası, tarih ve özet getir.",
             expected_output="Emsal kararlar listesi: daire, karar numarası, tarih, özet.",
-            agent=case_law_expert,
+            agent=case,
         )
         task_summary = Task(
             description=(
@@ -211,16 +208,11 @@ async def search_legal(request: SearchRequest):
                 "Bölümler: [MEVZUAT] ilgili kanun maddeleri, [İÇTİHAT] emsal kararlar, [ÖZET] kısa değerlendirme."
             ),
             expected_output="HTML formatında mevzuat ve içtihat özet raporu.",
-            agent=synthesis_expert,
+            agent=synth,
             context=[task_leg, task_case],
         )
 
-        crew = Crew(
-            agents=[legislation_expert, case_law_expert, synthesis_expert],
-            tasks=[task_leg, task_case, task_summary],
-            process=Process.sequential,
-        )
-
+        crew = Crew(agents=[leg, case, synth], tasks=[task_leg, task_case, task_summary], process=Process.sequential)
         result = await crew.kickoff_async()
         logger.info("Mevzuat araması tamamlandı.")
         return {"result": str(result)}
@@ -246,6 +238,7 @@ async def legal_chat(request: ChatRequest):
             tools=[search_web],
             llm=llm,
             verbose=ENV == "development",
+            max_retry_limit=3,
         )
 
         task = Task(
@@ -269,4 +262,5 @@ async def legal_chat(request: ChatRequest):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=PORT, reload=ENV == "development")
+
 
