@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContractCode - Profesyonel Hukuki Belge Otomasyonu</title>
+    <!-- Tailwind CSS & Alpine.js -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .brand-green { color: #72C05B; }
+        .bg-brand-green { background-color: #72C05B; }
+        .sidebar-item.active { background-color: #72C05B; color: white; }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="appState()">
+
+    <!-- ==========================================
+         1. LANDING PAGE (Sadece giriş yapılmamışsa görünür)
+         ========================================== -->
+    <div x-show="page === 'landing'" x-cloak>
+        <nav class="flex items-center justify-between px-8 py-5 max-w-7xl mx-auto">
+            <div class="text-2xl font-extrabold tracking-tighter flex items-center">
+                <span class="text-black">contract</span><span class="brand-green">code</span>
+            </div>
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
+                <a href="#" class="hover:text-black transition">Ana Sayfa</a>
+                <a href="#" class="hover:text-black transition">Şablonlar</a>
+                <a href="#" class="hover:text-black transition">Fiyatlandırma</a>
+                <a href="#" @click="page = 'login'" class="hover:text-black transition">Giriş Yap</a>
+            </div>
+            <button @click="page = 'login'" class="bg-brand-green text-white px-6 py-3 rounded-full font-semibold text-sm hover:bg-green-600 transition">Ücretsiz Başla</button>
+        </nav>
+        <section class="flex flex-col items-center justify-center text-center px-4 pt-20 pb-32 max-w-4xl mx-auto">
+            <h1 class="text-4xl md:text-6xl font-extrabold leading-tight text-gray-900 mb-6">
+                Profesyonel Hukuki <br> Belgelerinizi <span class="brand-green">Saniyeler</span> İçinde <br> Oluşturun
+            </h1>
+            <p class="text-gray-500 text-lg md:text-xl max-w-2xl mb-10">contractcode'da akıllı form sistemiyle hukuki belgelerinizi hızlı ve hatasız oluşturun.</p>
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+                <button @click="page = 'login'" class="bg-brand-green text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-green-600 transition shadow-md">Hemen Başla</button>
+                <button class="border border-gray-300 text-gray-700 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transition">Demo Görüntüle</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- ==========================================
+         2. LOGIN PAGE
+         ========================================== -->
+    <div x-show="page === 'login'" class="min-h-screen flex flex-col items-center justify-center bg-slate-100 p-4" x-cloak>
+        <div class="bg-white w-full max-w-md rounded-[40px] shadow-2xl p-10 flex flex-col items-center">
+            <div class="text-brand-green mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 16L16 11M16 11L11 6M16 11H4" /></svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Giriş Yap</h1>
+            <p class="text-gray-500 text-center mb-8">Hesabınıza giriş yapın</p>
+            <form @submit.prevent="page = 'dashboard'" class="w-full space-y-6">
+                <input type="email" required class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-brand-green outline-none" placeholder="Email">
+                <input type="password" required class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-brand-green outline-none" placeholder="Şifre">
+                <button type="submit" class="w-full bg-brand-green text-white font-bold py-4 rounded-2xl hover:bg-green-600 transition shadow-lg">Giriş Yap</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         3. MAIN APPLICATION LAYOUT (Admin Panel)
+         ========================================== -->
+    <div x-show="page !== 'landing' && page !== 'login'" class="flex h-screen overflow-hidden" x-cloak>
+        
+        <!-- SIDEBAR -->
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
+            <div class="p-6 text-center border-b border-gray-100">
+                <div class="text-xl font-extrabold tracking-tighter flex justify-center items-center gap-1">
+                    <span class="text-black">contract</span><span class="brand-green">code</span>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-semibold">Admin Paneli</p>
+            </div>
+            <nav class="flex-1 overflow-y-auto p-3 space-y-1">
+                <a @click="page = 'dashboard'" :class="page === 'dashboard' ? 'sidebar-item active' : 'sidebar-item'" class="flex items-center px-4 py-3 text-sm font-medium text-gray-600 rounded-lg cursor-pointer transition">Dashboard</a>
+                <a @click="page = 'users'" :class="page === 'users' ? 'sidebar-item active' : 'sidebar-item'" class="flex items-center px-4 py-3 text-sm font-medium text-gray-600 rounded-lg cursor-pointer transition">Kullanıcılar</a>
+                <a @click="page = 'templates'" :class="page === 'templates' ? 'sidebar-item active' : 'sidebar-item'" class="flex items-center px-4 py-3 text-sm font-medium text-gray-600 rounded-lg cursor-pointer transition">Şablonlar</a>
+                <a @click="page = 'permissions'" :class="page === 'permissions' ? 'sidebar-item active' : 'sidebar-item'" class="flex items-center px-4 py-3 text-sm font-medium text-gray-600 rounded-lg cursor-pointer transition">Yetki Yönetimi</a>
+                <div class="my-4 border-t border-gray-100"></div>
+                <a @click="page = 'bigakce'" :class="page === 'bigakce' ? 'sidebar-item active' : 'sidebar-item'" class="flex items-center px-4 py-3 text-sm font-medium text-gray-600 rounded-lg cursor-pointer transition">Kredi Yönetimi (BIGakçe)</a>
+            </nav>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 flex flex-col h-full overflow-hidden">
+            <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8">
+                <div class="text-sm text-gray-500">Dashboard &gt; <span class="text-gray-800 font-medium" x-text="page.toUpperCase()"></span></div>
+                <div class="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white font-bold">A</div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-8">
+                
+                <!-- DASHBOARD VIEW -->
+                <div x-show="page === 'dashboard'" x-cloak class="space-y-8">
+                    <div class="bg-indigo-600 rounded-[30px] p-8 text-white flex items-center gap-6 shadow-lg">
+                        <div class="bg-white/20 p-4 rounded-2xl">🚀</div>
+                        <div>
+                            <h2 class="text-3xl font-bold">İyi akşamlar, Admin!</h2>
+                            <p class="text-white/70">Hoş geldiniz! Dashboard'unuzda güncel bilgilere ulaşabilirsiniz.</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                            <h3 class="font-bold mb-4">Kredi Bakiyesi</h3>
+                            <div class="text-4xl font-extrabold brand-green">990 Kredi</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                            <h3 class="font-bold mb-4">Aktif Kullanıcılar</h3>
+                            <div class="text-4xl font-extrabold text-gray-800">1,240</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- USERS VIEW -->
+                <div x-show="page === 'users'" x-cloak>
+                    <div class="flex justify-between mb-6">
+                        <h1 class="text-3xl font-bold">Kullanıcılar</h1>
+                        <button @click="showUserModal = true" class="bg-brand-green text-white px-4 py-2 rounded-lg font-bold">+ Kullanıcı Davet Et</button>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 border-b border-gray-200">
+                                <tr><th class="px-6 py-4">Kullanıcı</th><th class="px-6 py-4">Email</th><th class="px-6 py-4">Durum</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr><td class="px-6 py-4 font-medium">Admin MA</td><td class="px-6 py-4">admin.ma@...</td><td class="px-6 py-4"><span class="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs">Aktif</span></td></tr>
+                                <tr><td class="px-6 py-4 font-medium">Admin BV</td><td class="px-6 py-4">admin.bv@...</td><td class="px-6 py-4"><span class="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs">Aktif</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TEMPLATES VIEW -->
+                <div x-show="page === 'templates'" x-cloak>
+                    <div class="flex justify-between mb-6">
+                        <h1 class="text-3xl font-bold">Şablonlar</h1>
+                        <button @click="page = 'new-template'" class="bg-brand-green text-white px-4 py-2 rounded-lg font-bold">+ Yeni Şablon</button>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 border-b border-gray-200">
+                                <tr><th class="px-6 py-4">Başlık</th><th class="px-6 py-4">Kategori</th><th class="px-6 py-4">İşlem</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr>
+                                    <td class="px-6 py-4 font-medium">Mesafeli Sözleşme</td>
+                                    <td class="px-6 py-4"><span class="bg-gray-100 px-2 py-1 rounded-full text-xs">Diğer</span></td>
+                                    <td class="px-6 py-4">
+                                        <button @click="page = 'template-detail'" class="text-brand-green font-bold hover:underline">Düzenle / Oluştur</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TEMPLATE DETAIL VIEW -->
+                <div x-show="page === 'template-detail'" x-cloak class="flex gap-8">
+                    <div class="flex-1 space-y-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="bg-green-100 text-brand-green px-3 py-1 rounded-full text-xs font-bold">Diğer</span>
+                                <h1 class="text-4xl font-extrabold text-gray-800 mt-4">Mesafeli Sözleşme</h1>
+                            </div>
+                            <button @click="page = 'wizard'" class="bg-brand-green text-white px-6 py-3 rounded-xl font-bold shadow-md">Belge Oluştur</button>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-[30px] p-8">
+                            <h3 class="text-xl font-bold mb-4">Bu Şablon Hakkında</h3>
+                            <p class="text-gray-500">Sadece 10 soruya cevap vererek belgenizi 5 dakikada oluşturabilirsiniz.</p>
+                        </div>
+                    </div>
+                    <div class="w-80 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase mb-4">Sözleşme Önizleme</h4>
+                        <div class="text-xs space-y-2">
+                            <p><strong>Ünvan:</strong> Nuvia Enerji A.Ş.</p>
+                            <p><strong>Süre:</strong> 5 Dakika</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WIZARD VIEW (The la pièce de résistance) -->
+                <div x-show="page === 'wizard'" x-cloak class="h-full flex flex-col">
+                    <!-- Stepper -->
+                    <div class="flex items-center justify-between mb-10 max-w-3xl mx-auto w-full">
+                        <div class="flex flex-col items-center" :class="wizardStep === 1 ? 'text-brand-green' : 'text-gray-400'">
+                            <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold mb-2" :class="wizardStep === 1 ? 'border-brand-green bg-brand-green text-white' : 'border-gray-300'">1</div>
+                            <span class="text-xs">Sorular</span>
+                        </div>
+                        <div class="flex-1 h-1 bg-gray-200 mx-4" :class="wizardStep > 1 ? 'bg-brand-green' : ''"></div>
+                        <div class="flex flex-col items-center" :class="wizardStep === 2 ? 'text-brand-green' : 'text-gray-400'">
+                            <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold mb-2" :class="wizardStep === 2 ? 'border-brand-green bg-brand-green text-white' : 'border-gray-300'">2</div>
+                            <span class="text-xs">Önizleme</span>
+                        </div>
+                        <div class="flex-1 h-1 bg-gray-200 mx-4" :class="wizardStep > 2 ? 'bg-brand-green' : ''"></div>
+                        <div class="flex flex-col items-center" :class="wizardStep === 3 ? 'text-brand-green' : 'text-gray-400'">
+                            <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold mb-2" :class="wizardStep === 3 ? 'border-brand-green bg-brand-green text-white' : 'border-gray-300'">3</div>
+                            <span class="text-xs">Tamamlandı</span>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 flex gap-8 overflow-hidden">
+                        <!-- Form Area -->
+                        <div class="w-1/2 bg-white p-8 rounded-2xl border border-gray-200 overflow-y-auto space-y-6" x-show="wizardStep === 1">
+                            <div class="space-y-4">
+                                <label class="block text-sm font-bold">Satışa konu ürün adedi? *</label>
+                                <input type="text" x-model="wizardData.adet" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-brand-green outline-none">
+                            </div>
+                            <div class="space-y-4">
+                                <label class="block text-sm font-bold">Alıcı Diğer Masraflar? *</label>
+                                <input type="text" x-model="wizardData.masraf" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-brand-green outline-none">
+                            </div>
+                            <button @click="wizardStep = 2" class="w-full bg-brand-green text-white py-3 rounded-xl font-bold shadow-md">Sıradaki Adıma Geç</button>
+                        </div>
+
+                        <!-- Live Preview Area -->
+                        <div class="w-1/2 bg-gray-200 p-8 rounded-2xl overflow-y-auto flex justify-center">
+                            <div class="bg-white w-full max-w-md p-10 shadow-xl space-y-6 text-sm">
+                                <h2 class="text-center font-bold text-xl underline mb-6">Sözleşme Taslağı</h2>
+                                <p>Ürün Adedi: <span class="font-bold border-b border-dotted" x-text="wizardData.adet || '...'"></span></p>
+                                <p>Ek Masraflar: <span class="font-bold border-b border-dotted" x-text="wizardData.masraf || '...'"></span></p>
+                                <div class="pt-10 text-center text-gray-400 italic">Tüm cevaplar verildiğinde döküman tamamlanacaktır.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Final Preview View -->
+                    <div x-show="wizardStep === 2" class="flex flex-col items-center justify-center space-y-6">
+                        <div class="bg-white w-full max-w-2xl p-12 shadow-2xl border border-gray-200">
+                            <h1 class="text-2xl font-bold text-center mb-10">Sözleşme Nihai Hali</h1>
+                            <p class="mb-4">Ürün adedi <span class="font-bold" x-text="wizardData.adet"></span> olarak belirlenmiştir.</p>
+                            <p>Masraflar: <span class="font-bold" x-text="wizardData.masraf"></span></p>
+                        </div>
+                        <div class="flex gap-4">
+                            <button @click="wizardStep = 1" class="px-6 py-2 border border-gray-300 rounded-lg">Düzenle</button>
+                            <button @click="showSaveModal = true" class="px-6 py-2 bg-brand-green text-white rounded-lg font-bold">Tamamla</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ==========================================
+         4. MODALS (Sistem Genelinde)
+         ========================================== -->
+    
+    <!-- New User Modal -->
+    <div x-show="showUserModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" x-cloak>
+        <div class="bg-white w-full max-w-lg rounded-[40px] p-10 shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6">Yeni Kullanıcı Oluştur</h2>
+            <div class="space-y-4">
+                <input type="text" class="w-full px-4 py-3 border border-gray-200 rounded-xl" placeholder="Ad Soyad *">
+                <input type="email" class="w-full px-4 py-3 border border-gray-200 rounded-xl" placeholder="Email *">
+                <div class="flex justify-end gap-4 mt-8">
+                    <button @click="showUserModal = false" class="text-gray-500 font-bold">İptal</button>
+                    <button @click="showUserModal = false" class="bg-brand-green text-white px-6 py-2 rounded-xl font-bold">Oluştur</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Save Modal -->
+    <div x-show="showSaveModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" x-cloak>
+        <div class="bg-white w-full max-w-xl rounded-[40px] p-10 shadow-2xl">
+            <h2 class="text-2xl font-bold mb-4">Belgeyi Kaydet</h2>
+            <div class="relative mb-8">
+                <input type="text" class="w-full px-4 py-4 border-2 border-brand-green rounded-2xl outline-none text-lg" placeholder="Belge Başlığı *">
+            </div>
+            <div class="flex justify-end gap-4">
+                <button @click="showSaveModal = false" class="text-gray-500 font-bold">İptal</button>
+                <button @click="showSaveModal = false; page = 'dashboard'; wizardStep = 1" class="bg-brand-green text-white px-8 py-3 rounded-2xl font-bold">Kaydet ve Bitir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credit Package Modal -->
+    <div x-show="showPackageModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" x-cloak>
+        <div class="bg-white w-full max-w-lg rounded-[40px] p-10 shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6">Yeni Kredi Paketi</h2>
+            <div class="space-y-4">
+                <input type="text" class="w-full px-4 py-3 border border-gray-200 rounded-xl" placeholder="Paket Adı *">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" class="w-full px-4 py-3 border border-gray-200 rounded-xl" placeholder="Kredi Miktarı *">
+                    <input type="text" class="w-full px-4 py-3 border border-gray-200 rounded-xl" placeholder="Fiyat (TL) *">
+                </div>
+                <div class="flex justify-end gap-4 mt-6">
+                    <button @click="showPackageModal = false" class="text-gray-500 font-bold">İptal</button>
+                    <button @click="showPackageModal = false" class="bg-brand-green text-white px-6 py-2 rounded-xl font-bold">Oluştur</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function appState() {
+            return {
+                page: 'landing', // landing, login, dashboard, users, templates, template-detail, wizard, permissions, bigakce
+                wizardStep: 1,
+                showUserModal: false,
+                showSaveModal: false,
+                showPackageModal: false,
+                wizardData: {
+                    adet: '',
+                    masraf: ''
+                }
+            }
+        }
+    </script>
+</body>
+</html>

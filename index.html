@@ -3,37 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ContractCode – Hukuki AI Analiz Botu</title>
+    <title>ContractCode</title>
     <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="chat-container">
-        <!-- Header -->
-        <div class="chat-header">
-            <i class="fas fa-gavel fa-2x"></i>
-            <div>
-                <h3>ContractCode</h3>
-                <p>Hukuki Sentez ve Risk Analizi</p>
-            </div>
-        </div>
-        <!-- Input Form -->
-        <div class="form-section">
-            <textarea id="documentText" placeholder="İncelenecek sözleşme / metin..." rows="5"></textarea>
-            <textarea id="goal" placeholder="Analiz Amacı (örn: risk tespiti, revizyon önerisi)..." rows="2"></textarea>
-            <button id="analyzeBtn" class="primary-btn">Analizi Başlat 🚀</button>
-        </div>
-        <!-- Chat / Report Area -->
-        <div class="chat-messages" id="chatMessages">
-            <!-- Sistem mesajı -->
-            <div class="message bot-message">
-                <div class="message-content">
-                    <strong>🔍 ContractCode Hazır</strong><br>
-                    Lütfen yukarıdaki alanları doldurup <b>"Analizi Başlat"</b> butonuna basın.
-                </div>
+
+    <!-- Landing -->
+    <div id="landing" class="view">
+        <div class="landing-inner">
+            <h1>ContractCode</h1>
+            <p class="subtitle">Hukuki AI Analiz Platformu</p>
+            <div class="cards">
+                <button class="card" data-mode="contract">
+                    <span class="card-emoji">📄</span>
+                    <span class="card-title">Sözleşme İnceleme</span>
+                    <span class="card-desc">Risk analizi ve revizyon önerisi</span>
+                </button>
+                <button class="card" data-mode="search">
+                    <span class="card-emoji">⚖️</span>
+                    <span class="card-title">Mevzuat & İçtihat</span>
+                    <span class="card-desc">Kanun ve Yargıtay kararı bul</span>
+                </button>
+                <button class="card" data-mode="chat">
+                    <span class="card-emoji">💬</span>
+                    <span class="card-title">Hukuki Asistan</span>
+                    <span class="card-desc">Serbest sohbet ve bilgi al</span>
+                </button>
             </div>
         </div>
     </div>
+
+    <!-- Mode: Contract -->
+    <div id="mode-contract" class="view hidden">
+        <div class="panel">
+            <div class="panel-header">
+                <button class="back" data-back>← Geri</button>
+                <h2>Sözleşme İnceleme</h2>
+            </div>
+            <div class="panel-form">
+                <textarea id="contractText" placeholder="Sözleşme metnini yapıştırın..." rows="6"></textarea>
+                <textarea id="contractGoal" placeholder="Analiz amacı (örn: risk tespiti)..." rows="2"></textarea>
+                <button id="contractBtn" class="btn">Analiz Et</button>
+            </div>
+            <div class="panel-output" id="contractOutput"></div>
+        </div>
+    </div>
+
+    <!-- Mode: Search -->
+    <div id="mode-search" class="view hidden">
+        <div class="panel">
+            <div class="panel-header">
+                <button class="back" data-back>← Geri</button>
+                <h2>Mevzuat & İçtihat Arama</h2>
+            </div>
+            <div class="panel-form">
+                <textarea id="searchQuery" placeholder="Araştırmak istediğiniz konuyu yazın..." rows="3"></textarea>
+                <button id="searchBtn" class="btn">Araştır</button>
+            </div>
+            <div class="panel-output" id="searchOutput"></div>
+        </div>
+    </div>
+
+    <!-- Mode: Chat -->
+    <div id="mode-chat" class="view hidden">
+        <div class="panel chat-panel">
+            <div class="panel-header">
+                <button class="back" data-back>← Geri</button>
+                <h2>Hukuki Asistan</h2>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="msg bot">Merhaba! Hukuki konularda sorularınızı sorabilirsiniz.</div>
+            </div>
+            <div class="chat-bar">
+                <input type="text" id="chatInput" placeholder="Sorunuzu yazın..." />
+                <button id="chatBtn" class="btn btn-send">Gönder</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/script.js"></script>
 </body>
 </html>

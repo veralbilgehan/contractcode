@@ -1,84 +1,106 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const analyzeBtn = document.getElementById('analyzeBtn');
-    const documentTextInput = document.getElementById('documentText');
-    const goalInput = document.getElementById('goal');
-    const chatMessages = document.getElementById('chatMessages');
+    const landing = document.getElementById('landing');
+    const views = { contract: document.getElementById('mode-contract'), search: document.getElementById('mode-search'), chat: document.getElementById('mode-chat') };
 
-    // Sanitize text to prevent XSS
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    function esc(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+
+    function showView(id) {
+        landing.classList.add('hidden');
+        Object.values(views).forEach(v => v.classList.add('hidden'));
+        if (views[id]) views[id].classList.remove('hidden');
     }
 
-    function appendMessage(sender, htmlContent) {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `message ${sender}-message`;
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'message-content';
-        contentDiv.innerHTML = htmlContent;
-        msgDiv.appendChild(contentDiv);
-        chatMessages.appendChild(msgDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        return msgDiv;
-    }
+    // Mode cards
+    document.querySelectorAll('[data-mode]').forEach(btn => {
+        btn.addEventListener('click', () => showView(btn.dataset.mode));
+    });
 
-    analyzeBtn.addEventListener('click', async () => {
-        const documentText = documentTextInput.value.trim();
-        const goal = goalInput.value.trim();
+    // Back buttons
+    document.querySelectorAll('[data-back]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            Object.values(views).forEach(v => v.classList.add('hidden'));
+            landing.classList.remove('hidden');
+        });
+    });
 
-        if (!documentText && !goal) {
-            alert('Lütfen en az bir alanı doldurunuz.');
-            return;
-        }
-
-        // Add user request summary message (escaped)
-        appendMessage('user', `
-            <strong>Metin:</strong> ${escapeHtml(documentText.substring(0, 100)) || '-'}${documentText.length > 100 ? '...' : ''}<br>
-            <strong>Amaç:</strong> ${escapeHtml(goal) || '-'}
-        `);
-
-        // Add loading bot message
-        analyzeBtn.disabled = true;
-        analyzeBtn.innerText = 'Analiz Ediliyor... ⏳';
-        const loadingMsg = appendMessage('bot', '<em>Hukuk ajanları mevzuat ve içtihatları inceliyor, lütfen bekleyin...</em>');
-
+    // === MODE 1: Contract ===
+    const contractBtn = document.getElementById('contractBtn');
+    const contractOutput = document.getElementById('contractOutput');
+    contractBtn.addEventListener('click', async () => {
+        const text = document.getElementById('contractText').value.trim();
+        const goal = document.getElementById('contractGoal').value.trim();
+        if (!text) return alert('Lütfen sözleşme metnini girin.');
+        contractBtn.disabled = true;
+        contractBtn.textContent = 'Analiz ediliyor...';
+        contractOutput.innerHTML = '<div class="loading">Analiz yapılıyor, lütfen bekleyin...</div>';
         try {
-            const response = await fetch('/analyze', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    documentText: documentText,
-                    goal: goal
-                })
-            });
-
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.detail || `Sunucu hatası: ${response.status}`);
-            }
-
-            const data = await response.json();
-            
-            // Replace loading message with report
-            loadingMsg.querySelector('.message-content').innerHTML = `
-                <div class="report-box">
-                    <div class="section-title">🔬 HUKUKİ ANALİZ RAPORU</div>
-                    <div style="white-space: pre-wrap; line-height: 1.6;">${data.analysis}</div>
-                </div>
-            `;
-        } catch (error) {
-            loadingMsg.querySelector('.message-content').innerHTML = `
-                <div style="color: #e74c3c;">
-                    <strong>❌ Hata Oluştu:</strong> ${escapeHtml(error.message)}
-                </div>
-            `;
+            const res = await fetch('/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ documentText: text, goal: goal || 'risk tespiti' }) });
+            if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Sunucu hatası');
+            const data = await res.json();
+            contractOutput.innerHTML = `<div class="result-box">${data.analysis}</div>`;
+        } catch (e) {
+            contractOutput.innerHTML = `<div class="error-text">Hata: ${esc(e.message)}</div>`;
         } finally {
-            analyzeBtn.disabled = false;
-            analyzeBtn.innerText = 'Analizi Başlat 🚀';
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            contractBtn.disabled = false;
+            contractBtn.textContent = 'Analiz Et';
         }
     });
+
+    // === MODE 2: Search ===
+    const searchBtn = document.getElementById('searchBtn');
+    const searchOutput = document.getElementById('searchOutput');
+    searchBtn.addEventListener('click', async () => {
+        const query = document.getElementById('searchQuery').value.trim();
+        if (!query) return alert('Lütfen arama konusunu girin.');
+        searchBtn.disabled = true;
+        searchBtn.textContent = 'Araştırılıyor...';
+        searchOutput.innerHTML = '<div class="loading">Mevzuat ve içtihatlar taranıyor...</div>';
+        try {
+            const res = await fetch('/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }) });
+            if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Sunucu hatası');
+            const data = await res.json();
+            searchOutput.innerHTML = `<div class="result-box">${data.result}</div>`;
+        } catch (e) {
+            searchOutput.innerHTML = `<div class="error-text">Hata: ${esc(e.message)}</div>`;
+        } finally {
+            searchBtn.disabled = false;
+            searchBtn.textContent = 'Araştır';
+        }
+    });
+
+    // === MODE 3: Chat ===
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const chatBtn = document.getElementById('chatBtn');
+
+    function addMsg(role, text) {
+        const div = document.createElement('div');
+        div.className = `msg ${role}`;
+        div.innerHTML = role === 'user' ? esc(text) : text;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return div;
+    }
+
+    async function sendChat() {
+        const msg = chatInput.value.trim();
+        if (!msg) return;
+        chatInput.value = '';
+        addMsg('user', msg);
+        chatBtn.disabled = true;
+        const loading = addMsg('bot', 'Düşünüyorum...');
+        try {
+            const res = await fetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg }) });
+            if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Sunucu hatası');
+            const data = await res.json();
+            loading.innerHTML = data.reply;
+        } catch (e) {
+            loading.innerHTML = `<span class="error-text">Hata: ${esc(e.message)}</span>`;
+        } finally {
+            chatBtn.disabled = false;
+        }
+    }
+
+    chatBtn.addEventListener('click', sendChat);
+    chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
 });
