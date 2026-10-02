@@ -9,5 +9,8 @@ pydantic-settings==2.15.0
 # CrewAI
 crewai==1.15.23
 
-# Gemini support (native in CrewAI, needs google-genai)
+# Gemini support
 google-genai>=1.0.0
+
+# Real web search (no API key needed)
+duckduckgo-search>=7.0.0

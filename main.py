@@ -38,24 +38,70 @@ app.add_middleware(
 # LLM setup — Gemini (native CrewAI provider)
 llm = LLM(model="gemini/gemini-3.8-flash", temperature=0)
 
-# --- Simulated Legal Tools (replace with real RAG later) ---
+# --- Real Web Search Tools ---
+from duckduckgo_search import DDGS
+
 @tool("search_legislation")
 def search_legislation(query: str) -> str:
-    """Search the legislation database for relevant statutes."""
-    # TODO: integrate with a vector DB or legal API
-    return "Borçlar Kanunu Madde 27: Yazılı sözleşmelerin ispat gücü ve şartları..."
+    """Search for real Turkish legislation (kanun maddeleri) from official sources like mevzuat.gov.tr."""
+    try:
+        with DDGS() as ddgs:
+            results = ddgs.text(
+                f"{query} kanun madde site:mevzuat.gov.tr OR site:lexpera.com.tr",
+                max_results=5
+            )
+            if not results:
+                return "Bu konuda mevzuat sonucu bulunamadı."
+            output = []
+            for r in results:
+                output.append(f"Başlık: {r['title']}\nÖzet: {r['body']}\nKaynak: {r['href']}\n")
+            return "\n---\n".join(output)
+    except Exception as e:
+        return f"Mevzuat araması sırasında hata: {str(e)}"
 
 @tool("search_case_law")
 def search_case_law(query: str) -> str:
-    """Search Yargıtay case law for relevant precedents."""
-    # TODO: integrate with a case law search engine
-    return "Yargıtay 3. HD, 2023/523 E. Kararı: Sözleşme maddelerinin açık niyet ilkesi..."
+    """Search for real Yargıtay case law decisions from official and verified legal sources."""
+    try:
+        with DDGS() as ddgs:
+            results = ddgs.text(
+                f"{query} Yargıtay karar site:karararama.yargitay.gov.tr OR site:lexpera.com.tr OR site:kazanci.com.tr",
+                max_results=5
+            )
+            if not results:
+                return "Bu konuda içtihat sonucu bulunamadı."
+            output = []
+            for r in results:
+                output.append(f"Başlık: {r['title']}\nÖzet: {r['body']}\nKaynak: {r['href']}\n")
+            return "\n---\n".join(output)
+    except Exception as e:
+        return f"İçtihat araması sırasında hata: {str(e)}"
 
-# --- Agents ---
+@tool("search_web")
+def search_web(query: str) -> str:
+    """General web search for Turkish legal information."""
+    try:
+        with DDGS() as ddgs:
+            results = ddgs.text(f"{query} Türk hukuku", max_results=5)
+            if not results:
+                return "Sonuç bulunamadı."
+            output = []
+            for r in results:
+                output.append(f"Başlık: {r['title']}\nÖzet: {r['body']}\nKaynak: {r['href']}\n")
+            return "\n---\n".join(output)
+    except Exception as e:
+        return f"Arama hatası: {str(e)}"
+
+# --- Agents (strict anti-hallucination instructions) ---
 legislation_expert = Agent(
     role="Mevzuat Araştırmacısı",
-    goal="İlgili kanun maddelerini bulmak",
-    backstory="Sadece mevzuat metni getirir, yorum yapmaz.",
+    goal="İlgili kanun maddelerini gerçek kaynaklardan bulmak",
+    backstory=(
+        "Türk mevzuatı konusunda uzman bir araştırmacısın. "
+        "SADECE search_legislation aracını kullanarak bulduğun gerçek kanun maddelerini raporla. "
+        "KESİNLİKLE uydurma veya tahmine dayalı madde numarası VERME. "
+        "Bulamadığın bilgiyi 'bulunamadı' olarak belirt."
+    ),
     tools=[search_legislation],
     llm=llm,
     verbose=ENV == "development",
@@ -63,8 +109,14 @@ legislation_expert = Agent(
 
 case_law_expert = Agent(
     role="İçtihat Uzmanı",
-    goal="Emsal yargı kararlarını bulmak",
-    backstory="Sadece gerçek karar numaralarıyla çalışan bir hukuk araştırmacısı.",
+    goal="Emsal Yargıtay kararlarını gerçek kaynaklardan bulmak",
+    backstory=(
+        "Yargıtay içtihatları konusunda uzman bir araştırmacısın. "
+        "SADECE search_case_law aracını kullanarak bulduğun gerçek kararları raporla. "
+        "KESİNLİKLE uydurma karar numarası, esas numarası veya tarih VERME. "
+        "Her karar için kaynak URL'sini mutlaka belirt. "
+        "Bulamadığın bilgiyi 'bulunamadı' olarak belirt."
+    ),
     tools=[search_case_law],
     llm=llm,
     verbose=ENV == "development",
@@ -73,7 +125,12 @@ case_law_expert = Agent(
 synthesis_expert = Agent(
     role="Kıdemli Hukuk Analisti",
     goal="Mevzuat ve içtihatları sentezleyerek nihai raporu hazırlamak",
-    backstory="Sadece verilen verilere dayanarak rapor üretir.",
+    backstory=(
+        "Sadece verilen verilere dayanarak rapor üretirsin. "
+        "KESİNLİKLE kendi bilginden ek karar numarası veya madde numarası EKLEME. "
+        "Araştırma sonuçlarında bulunamayan bilgiyi 'doğrulanamamıştır' olarak belirt. "
+        "Her alıntının kaynağını göster."
+    ),
     llm=llm,
     verbose=ENV == "development",
 )
@@ -204,9 +261,11 @@ async def legal_chat(request: ChatRequest):
             backstory=(
                 "Türk hukuku konusunda uzman bir danışmansın. "
                 "Kullanıcıya sade ve anlaşılır dilde bilgi verirsin. "
-                "Gerektiğinde ilgili kanun maddelerine atıf yaparsın. "
-                "Kesin hukuki tavsiye vermekten kaçınır, yönlendirme yaparsın."
+                "Gerektiğinde search_web aracını kullanarak gerçek bilgi bul. "
+                "KESİNLİKLE uydurma kanun maddesi veya karar numarası VERME. "
+                "Emin olmadığın bilgileri 'doğrulanması gerekir' olarak belirt."
             ),
+            tools=[search_web],
             llm=llm,
             verbose=ENV == "development",
         )
