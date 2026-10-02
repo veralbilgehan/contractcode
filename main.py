@@ -41,56 +41,34 @@ llm = LLM(model="gemini/gemini-3.8-flash", temperature=0)
 # --- Real Web Search Tools ---
 from duckduckgo_search import DDGS
 
-@tool("search_legislation")
-def search_legislation(query: str) -> str:
-    """Search for real Turkish legislation (kanun maddeleri) from official sources like mevzuat.gov.tr."""
+def _ddg_search(query: str, max_results: int = 8) -> str:
+    """Shared DuckDuckGo search helper."""
     try:
         with DDGS() as ddgs:
-            results = ddgs.text(
-                f"{query} kanun madde site:mevzuat.gov.tr OR site:lexpera.com.tr",
-                max_results=5
-            )
-            if not results:
-                return "Bu konuda mevzuat sonucu bulunamadı."
-            output = []
-            for r in results:
-                output.append(f"Başlık: {r['title']}\nÖzet: {r['body']}\nKaynak: {r['href']}\n")
-            return "\n---\n".join(output)
-    except Exception as e:
-        return f"Mevzuat araması sırasında hata: {str(e)}"
-
-@tool("search_case_law")
-def search_case_law(query: str) -> str:
-    """Search for real Yargıtay case law decisions from official and verified legal sources."""
-    try:
-        with DDGS() as ddgs:
-            results = ddgs.text(
-                f"{query} Yargıtay karar site:karararama.yargitay.gov.tr OR site:lexpera.com.tr OR site:kazanci.com.tr",
-                max_results=5
-            )
-            if not results:
-                return "Bu konuda içtihat sonucu bulunamadı."
-            output = []
-            for r in results:
-                output.append(f"Başlık: {r['title']}\nÖzet: {r['body']}\nKaynak: {r['href']}\n")
-            return "\n---\n".join(output)
-    except Exception as e:
-        return f"İçtihat araması sırasında hata: {str(e)}"
-
-@tool("search_web")
-def search_web(query: str) -> str:
-    """General web search for Turkish legal information."""
-    try:
-        with DDGS() as ddgs:
-            results = ddgs.text(f"{query} Türk hukuku", max_results=5)
+            results = list(ddgs.text(query, max_results=max_results))
             if not results:
                 return "Sonuç bulunamadı."
             output = []
             for r in results:
-                output.append(f"Başlık: {r['title']}\nÖzet: {r['body']}\nKaynak: {r['href']}\n")
-            return "\n---\n".join(output)
+                output.append(f"Başlık: {r['title']}\nÖzet: {r['body']}\nKaynak: {r['href']}")
+            return "\n\n---\n\n".join(output)
     except Exception as e:
         return f"Arama hatası: {str(e)}"
+
+@tool("search_legislation")
+def search_legislation(query: str) -> str:
+    """Search for Turkish legislation - kanun maddeleri, yönetmelikler, mevzuat."""
+    return _ddg_search(f"{query} Türk kanun madde mevzuat")
+
+@tool("search_case_law")
+def search_case_law(query: str) -> str:
+    """Search for Yargıtay case law decisions - emsal kararlar, içtihatlar."""
+    return _ddg_search(f"{query} Yargıtay kararı emsal içtihat")
+
+@tool("search_web")
+def search_web(query: str) -> str:
+    """General web search for Turkish legal information."""
+    return _ddg_search(f"{query} Türk hukuku")
 
 # --- Agents (strict anti-hallucination instructions) ---
 legislation_expert = Agent(
