@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
     const analyzeBtn = document.getElementById('analyzeBtn');
-    const eventSummaryInput = document.getElementById('eventSummary');
     const documentTextInput = document.getElementById('documentText');
     const goalInput = document.getElementById('goal');
     const chatMessages = document.getElementById('chatMessages');
@@ -25,18 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     analyzeBtn.addEventListener('click', async () => {
-        const eventSummary = eventSummaryInput.value.trim();
         const documentText = documentTextInput.value.trim();
         const goal = goalInput.value.trim();
 
-        if (!eventSummary && !documentText && !goal) {
+        if (!documentText && !goal) {
             alert('Lütfen en az bir alanı doldurunuz.');
             return;
         }
 
         // Add user request summary message (escaped)
         appendMessage('user', `
-            <strong>Olay:</strong> ${escapeHtml(eventSummary) || '-'}<br>
+            <strong>Metin:</strong> ${escapeHtml(documentText.substring(0, 100)) || '-'}${documentText.length > 100 ? '...' : ''}<br>
             <strong>Amaç:</strong> ${escapeHtml(goal) || '-'}
         `);
 
@@ -52,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    eventSummary: eventSummary,
                     documentText: documentText,
                     goal: goal
                 })

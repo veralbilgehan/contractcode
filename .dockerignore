@@ -1,0 +1,12 @@
+.venv
+.vscode
+__pycache__
+*.pyc
+.git
+.gitignore
+.env
+.env.example
+indekx.html
+README.md
+render.yaml
+Procfile

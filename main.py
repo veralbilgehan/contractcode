@@ -11,7 +11,6 @@ from crewai.tools import tool
 
 # --- Configuration ---
 load_dotenv()  # loads .env from project root
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
 
 # Logging
 logging.basicConfig(level=logging.INFO)
@@ -36,8 +35,8 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
-# LLM setup (deterministic for legal analysis)
-llm = LLM(model="gpt-4o", temperature=0)
+# LLM setup — Gemini (native CrewAI provider)
+llm = LLM(model="gemini/gemini-3.8-flash", temperature=0)
 
 # --- Simulated Legal Tools (replace with real RAG later) ---
 @tool("search_legislation")
@@ -81,7 +80,6 @@ synthesis_expert = Agent(
 
 # --- Request model ---
 class AnalysisRequest(BaseModel):
-    eventSummary: str
     documentText: str
     goal: str
 
@@ -108,7 +106,6 @@ async def analyze_legal_case(request: AnalysisRequest):
         # Define tasks
         task_leg = Task(
             description=(
-                f"Olay Özeti: {request.eventSummary}\n"
                 f"Sözleşme Metni: {request.documentText}\n"
                 "İlgili kanun maddelerini bulun."
             ),
@@ -117,7 +114,7 @@ async def analyze_legal_case(request: AnalysisRequest):
         )
         task_case = Task(
             description=(
-                f"Olay Özeti: {request.eventSummary}\n"
+                f"Sözleşme Metni: {request.documentText}\n"
                 "Benzer Yargıtay içtihatlarını bulun, karar numarası ve özetini getir."
             ),
             expected_output="Karar numarası, tarih ve temel prensipler.",
